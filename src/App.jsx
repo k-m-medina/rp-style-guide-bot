@@ -12,7 +12,7 @@ const BLOCK_I = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADgAAABQCAMAAAB7/
 const EXAMPLE_PROMPTS = [
   { label: "Naming", prompt: "EnterpriseWorks startup Cache Energy (CE) recently won a pitch competition at UIUC's Research Park." },
   { label: "AP Style", prompt: "The event runs from 8:00 a.m. - 9:00 a.m. on Sept. 3rd. Join us this morning at the Atkins Building." },
-  { label: "Grammar", prompt: "Join us at UIUC's Research Park for the annual AgTech Summit in August, 2025. Additionally, we'll be announcing award winners." },
+  { label: "Social post", prompt: "Check this Instagram post: Join us for Fire @ Five this thursday from 5:00-7:00 p.m. at the Atkins Patio & Lawn!! 🍕🎶 #fireatfive #researchpark #uiuc" },
   { label: "Style question", prompt: "Can I use 'Dr.' for someone with a Ph.D.? And should I capitalize 'university' in the middle of a sentence?" },
 ];
 
