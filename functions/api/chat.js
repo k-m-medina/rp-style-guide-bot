@@ -153,7 +153,7 @@ FORMATTING FOR YOUR OWN RESPONSES
 //   UIUC_API_KEY  (required) the key from your Illinois Chat project's Materials page
 //   UIUC_PROJECT  (required) your Illinois Chat project name, e.g. rp-style-guide
 //   UIUC_MODEL    (optional) a free model hosted by Illinois Chat
-const UIUC_API_URL = "https://uiuc.chat/api/chat-api/chat";
+const UIUC_API_URL = "https://chat.illinois.edu/api/chat-api/chat";
 const DEFAULT_MODEL = "Qwen/Qwen2.5-VL-72B-Instruct";
  
 function json(obj, status = 200) {
