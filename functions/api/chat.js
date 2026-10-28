@@ -147,7 +147,8 @@ FORMATTING FOR YOUR OWN RESPONSES
 - Write in plain, direct language. No jargon or buzzwords.
 - Do not use em dashes in your response.
 - Do not be verbose or hedge.
-- If asked a direct style question (not a review), answer it directly and concisely.`;
+- If asked a direct style question (not a review), answer it directly and concisely.
+- Never add citations, sources, footnotes or links of your own. Never praise or comment on the news itself. Your only job is editing.`;
 
 // Illinois Chat (chat.illinois.edu) settings. Set these in Cloudflare:
 //   UIUC_API_KEY  (required) the key from your Illinois Chat project's Materials page
@@ -196,6 +197,22 @@ function extractAnswer(raw) {
   return "";
 }
 
+// Illinois Chat can replace the system message with its own default prompt,
+// so the style rules are also placed directly in the newest user message.
+function withInstructions(messages) {
+  const out = messages.map((m) => ({ role: m.role, content: m.content }));
+  for (let i = out.length - 1; i >= 0; i--) {
+    if (out[i].role === "user") {
+      out[i].content =
+        SYSTEM_PROMPT +
+        "\n\n---\nFollow every instruction above. Here is the user's message. If it is copy, review it. If it is a question, answer it.\n\n" +
+        out[i].content;
+      break;
+    }
+  }
+  return [{ role: "system", content: SYSTEM_PROMPT }, ...out];
+}
+
 export async function onRequestPost(context) {
   const apiKey = (context.env.UIUC_API_KEY || "").trim();
   const project = (context.env.UIUC_PROJECT || "").trim();
@@ -230,7 +247,7 @@ export async function onRequestPost(context) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model,
-        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
+        messages: withInstructions(messages),
         api_key: apiKey,
         course_name: project,
         temperature: 0.1,
