@@ -170,8 +170,8 @@ function reply(text) {
 }
  
 export async function onRequestPost(context) {
-  const apiKey = context.env.UIUC_API_KEY;
-  const project = context.env.UIUC_PROJECT;
+  const apiKey = (context.env.UIUC_API_KEY || "").trim();
+  const project = (context.env.UIUC_PROJECT || "").trim();
   const model = context.env.UIUC_MODEL || DEFAULT_MODEL;
  
   if (!apiKey || !project) {
@@ -213,7 +213,10 @@ export async function onRequestPost(context) {
   const text = (await res.text()).trim();
  
   if (!res.ok) {
-    return reply(`Illinois Chat returned an error (${res.status}). ${text.slice(0, 300)}`);
+    return reply(`Illinois Chat returned an error (${res.status}) for project "${project}". ${text.slice(0, 300)}`);
+  }
+  if (text.startsWith("<!DOCTYPE") || text.startsWith("<html")) {
+    return reply(`Illinois Chat sent back a web page instead of a reply (status ${res.status}, from ${res.url}). The API address may have changed.`);
   }
   if (!text) {
     return reply("Illinois Chat sent back an empty reply. Please try again.");
