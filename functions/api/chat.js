@@ -169,6 +169,33 @@ function reply(text) {
   return json({ content: [{ type: "text", text }] });
 }
  
+// Illinois Chat may reply as JSON or as plain text depending on the model.
+// Pull the answer out of whichever format arrives.
+function extractAnswer(raw) {
+  if (!raw) return "";
+  let data;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    return raw; // plain text reply
+  }
+  if (typeof data === "string") return data.trim();
+  const candidates = [
+    data.message,
+    data.message?.content,
+    data.content,
+    data.response,
+    data.text,
+    data.answer,
+    data.choices?.[0]?.message?.content,
+    data.choices?.[0]?.text,
+  ];
+  for (const c of candidates) {
+    if (typeof c === "string" && c.trim()) return c.trim();
+  }
+  return "";
+}
+ 
 export async function onRequestPost(context) {
   const apiKey = (context.env.UIUC_API_KEY || "").trim();
   const project = (context.env.UIUC_PROJECT || "").trim();
@@ -190,9 +217,15 @@ export async function onRequestPost(context) {
     return json({ error: "Missing messages array." }, 400);
   }
  
+  // Give up after 2 minutes so the page never hangs forever.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 120000);
+ 
   let res;
+  let text;
   try {
     res = await fetch(UIUC_API_URL, {
+      signal: controller.signal,
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -201,27 +234,31 @@ export async function onRequestPost(context) {
         api_key: apiKey,
         course_name: project,
         temperature: 0.1,
-        stream: true,
+        stream: false,
         retrieval_only: false,
       }),
     });
-  } catch {
+    text = (await res.text()).trim();
+  } catch (err) {
+    if (err && err.name === "AbortError") {
+      return reply(`Illinois Chat took more than 2 minutes to answer using the model "${model}". Try again, or switch UIUC_MODEL to a faster model.`);
+    }
     return reply("Couldn't reach Illinois Chat. Please try again in a minute.");
+  } finally {
+    clearTimeout(timer);
   }
  
-  // Illinois Chat streams plain text. Collect the whole reply, then send it on.
-  const text = (await res.text()).trim();
- 
   if (!res.ok) {
-    return reply(`Illinois Chat returned an error (${res.status}) for project "${project}". ${text.slice(0, 300)}`);
+    return reply(`Illinois Chat returned an error (${res.status}) for project "${project}". ${text.slice(0, 1500)}`);
   }
   if (text.startsWith("<!DOCTYPE") || text.startsWith("<html")) {
     return reply(`Illinois Chat sent back a web page instead of a reply (status ${res.status}, from ${res.url}). The API address may have changed.`);
   }
-  if (!text) {
-    return reply("Illinois Chat sent back an empty reply. Please try again.");
+  const answer = extractAnswer(text);
+  if (!answer) {
+    return reply(`Illinois Chat sent back an empty reply using the model "${model}". Raw response: ${text.slice(0, 500) || "(nothing)"}`);
   }
-  return reply(text);
+  return reply(answer);
 }
  
 export async function onRequestOptions() {
